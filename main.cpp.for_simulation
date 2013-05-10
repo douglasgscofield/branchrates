@@ -1,0 +1,430 @@
+#include "RatePVector.h"
+#include "RatePMap.h"
+#include "PhyloTree.h"
+#include "TaxonMatrix.h"
+#include "TraitMatrix.h"
+#include "BranchRateManager.h"
+#include "Simulate.h"
+#include "ML_single_NewtonRaphson.h"
+#include "ML_multi_QuasiNewton.h"
+#include "ML_multi_DownhillSimplex.h"
+
+#include <string>
+#include <iostream>
+#include <fstream>
+
+namespace {
+template<class T> void read_arg(char* argp, T& destination) {
+    const std::string arg(argp);
+    std::istringstream arg_stream(arg);
+    arg_stream >> destination;
+}
+void usage() {
+    std::cerr << "argments are as follows:" << std::endl;
+    std::cerr << "       [ -true ]" << std::endl;
+    std::cerr << "       [ -sim | -est ]" << std::endl;
+    std::cerr << "       [ -tree <int> ]" << std::endl;
+    std::cerr << "       [ -ntraits <int> | -numtraits <int> ]" << std::endl;
+    std::cerr << "       [ -prior <double> ]" << std::endl;
+    std::cerr << "       [ -forwbase <double> ]" << std::endl;
+    std::cerr << "       [ -backrelmag <double> ]" << std::endl;
+    std::cerr << "       [ -simtype { const | ratio |"
+                         " treetworate | branchonerate } ]" << std::endl;
+    std::cerr << "       [ -esttype { simplex | downhillsimplex |"
+                          << " newton | quasinewton } ]" << std::endl;
+}
+};
+
+main(int argc, char* argv[])
+{
+    const   std::string progname(argv[0]);
+    bool    do_simulations = false;
+    bool    do_true_profiles_only = false;
+    bool    do_estimates = false;
+    int     sim_ntaxa = -1;
+    int     sim_internal_tree = -1;
+    int     single_sim_type = -1;
+    enum    {mle_method_error,
+             mle_method_downhillsimplex,
+             mle_method_quasinewton}
+            mle_method = mle_method_downhillsimplex;  // method of maximization
+    bool    do_estimate_with_correct_prior = true;
+    double  estimate_assumed_prior = 0.5;
+    double  base_prior = 0.001;
+    double  forw_base = 0.001;
+    double  back_relmag = 0.01;
+
+    int     single_num_traits = -1;
+    std::vector<int> sim_ntraits;
+    /* [0] */ sim_ntraits.push_back(100);
+    /* [1] */ sim_ntraits.push_back(10000);
+    /* [2] */ sim_ntraits.push_back(1000000);
+
+    int i_argv = 1;
+    while (i_argv < argc) {
+        const std::string arg(argv[i_argv]);
+        if (arg == "-sim") {
+            do_simulations = true;
+            do_estimates = false;
+            ++i_argv;
+        } else if (arg == "-est") {
+            do_estimates = true;
+            do_simulations = false;
+            ++i_argv;
+        } else if (arg == "-true") {
+            do_true_profiles_only = true;
+            do_simulations = true;
+            do_estimates = false;
+            ++i_argv;
+        } else if (arg == "-tree") {
+            read_arg(argv[i_argv+1], sim_internal_tree);
+            i_argv += 2;
+            if (sim_internal_tree >= 2 && sim_internal_tree <= 4) {
+                sim_ntaxa = 3;
+            } else if (sim_internal_tree >= 5 && sim_internal_tree <= 6) {
+                sim_ntaxa = 6;
+            } else {
+                std::cerr << "-tree <arg> does not set sim_ntaxa correctly"
+                          << std::endl;
+                abort();
+            }
+        } else if (arg == "-ntraits" || arg == "-numtraits") {
+            read_arg(argv[i_argv+1], single_num_traits);
+            sim_ntraits.resize(0);
+            sim_ntraits.push_back(single_num_traits);
+            i_argv += 2;
+        } else if (arg == "-forwbase") {
+            read_arg(argv[i_argv+1], forw_base);
+            i_argv += 2;
+        } else if (arg == "-backrelmag") {
+            read_arg(argv[i_argv+1], back_relmag);
+            i_argv += 2;
+        } else if (arg == "-prior") {
+            do_estimate_with_correct_prior = false;
+            read_arg(argv[i_argv+1], estimate_assumed_prior);
+            i_argv += 2;
+        } else if (arg == "-baseprior") {
+            read_arg(argv[i_argv+1], base_prior);
+            i_argv += 2;
+        } else if (arg == "-esttype") {
+            std::string arg_arg(argv[i_argv+1]);
+            if (arg_arg == "simplex" || arg_arg == "downhillsimplex") {
+                mle_method = mle_method_downhillsimplex;
+            } else if (arg == "newton" || arg == "quasinewton") {
+                mle_method = mle_method_quasinewton;
+            } else {
+                std::cerr << "-esttype <arg> must be one of [ simplex |"
+                          << " downhillsimplex | newton | quasinewton ]"
+                          << std::endl;
+                abort();
+            }
+            i_argv += 2;
+        } else if (arg == "-simtype") {
+            std::string arg_arg(argv[i_argv+1]);
+            if (arg_arg == "const" || arg_arg == "constant") {
+                single_sim_type = 0;
+            } else if (arg_arg == "ratio") {
+                single_sim_type = 1;
+            } else if (arg_arg == "treetworate") {
+                single_sim_type = 2;
+            } else if (arg_arg == "branchonerate") {
+                single_sim_type = 3;
+            } else {
+                std::cerr << "-simtype <arg> must be one of [ const[ant] |"
+                          << " ratio | treetworate | branchonerate ]" << std::endl;
+                abort();
+            }
+            i_argv += 2;
+        } else if (arg == "-help" || arg == "-h" || arg == "?" || arg == "-?"
+                   || true) {
+            usage();
+            exit(1);
+        }
+    }
+
+    if (do_simulations == false && do_estimates == false) {
+        std::cerr << progname << ": which is it, -sim or -est ?" << std::endl;
+        usage();
+        exit(1);
+    } else if (sim_internal_tree < 0) {
+        std::cerr << progname << ": must specify a -tree <int>" << std::endl;
+        usage();
+        exit(1);
+    }
+
+    if (estimate_assumed_prior == 0.0 ||
+        estimate_assumed_prior == 1.0) {
+        std::cerr << "warning, prior is ill-conditioned, one character"
+                  << " state has Pr == 0" << std::endl;
+    }
+
+    std::vector<std::string> sim_description;
+    /* [0] */ sim_description.push_back("asym-forw-const-back");
+    /* [1] */ sim_description.push_back("asym-forw-const-ratio-back");
+    /* [2] */ sim_description.push_back("treewide-tworate-equivalent");
+    /* [3] */ sim_description.push_back("branchspecific-onerate-equivalent");
+    const int max_sim_type = sim_description.size();
+
+    // parameters for simulation transition rates and probabilities
+    std::vector<double> prior_prob_state0(3);
+    prior_prob_state0[0] = base_prior;
+    prior_prob_state0[1] = 0.5;
+    prior_prob_state0[2] = 1.0 - base_prior;
+
+
+    char filename_taxa[100];
+    char filename_map[100];
+    char filename_traits[100];
+
+    sprintf(filename_taxa, "sim%d.taxa", sim_ntaxa);
+    sprintf(filename_map, "sim%d.map", sim_ntaxa);
+
+    TaxonMatrix         taxon_matrix(filename_taxa);
+
+    PhyloTree           tree(sim_internal_tree);
+
+    BranchRateManager   branch_rate_manager;
+    TraitMatrix         trait_matrix;
+
+    tree.set_taxon_matrix(taxon_matrix);
+    tree.set_branchratemanager(branch_rate_manager);
+    tree.allocate_branchrate_ids();
+    trait_matrix.set_taxa(taxon_matrix);
+
+    RatePMap            ratep_map(filename_map);
+
+    branch_rate_manager.allocate_ratep_from_map(ratep_map);
+
+    //////////////////////////// simulations
+    //////////////////////////// simulations
+    //////////////////////////// simulations
+    if (do_simulations) {
+        Simulate sim;
+        char buf[1000];
+        const std::string filename;
+
+        RatePVector& rpv = branch_rate_manager.get_ratepvector();
+        RatePVector::m_ratep_type rpinit(rpv.size());
+        for (int i = 0; i < rpinit.size(); ++i) rpinit[i].resize(2);
+
+        const char* sim_desc;
+
+        // std::cout << taxon_matrix;
+        // std::cout << ratep_map;
+        // std::cout << tree;
+
+        int sim_type = (single_sim_type < 0) ? 0 : single_sim_type;
+        const int max_sim = (single_sim_type < 0) ? max_sim_type :
+                                                    single_sim_type + 1;
+        for (; sim_type < max_sim; ++sim_type) {
+            sim_desc = sim_description[sim_type].c_str();
+            switch(sim_type) {
+                case 0:
+                    /* [0] "asym-forw-const-back" */
+                    for (int i = 0; i < rpinit.size(); ++i) {
+                        rpinit[i][0] = forw_base + forw_base*double(i);
+                        rpinit[i][1] = back_relmag * forw_base;
+                    }
+                    break;
+                case 1:
+                    /* [1] "asym-forw-const-ratio-back" */
+                    for (int i = 0; i < rpinit.size(); ++i) {
+                        rpinit[i][0] = forw_base + forw_base*double(i);
+                        rpinit[i][1] = back_relmag * rpinit[i][0];
+                    }
+                    break;
+                case 2:
+                    /* [2] "treewide-tworate-equivalent" */
+                    for (int i = 0; i < rpinit.size(); ++i) {
+                        rpinit[i][0] = forw_base;
+                        rpinit[i][1] = back_relmag * rpinit[i][0];
+                    }
+                    break;
+                case 3:
+                    /* [3] "branchspecific-onerate-equivalent" */
+                    for (int i = 0; i < rpinit.size(); ++i) {
+                        rpinit[i][0] = forw_base + forw_base*double(i);
+                        rpinit[i][1] = rpinit[i][0];
+                    }
+                    break;
+                default:
+                    std::cerr << "unrecognized sim_type" << std::endl;
+                    break;
+            }
+
+            int rid;
+            if (sim_ntaxa == 3) {
+                rid = rpv.get_ratep_id("q01_1");  rpv[rid].set_ratep(rpinit[0][0]);
+                rid = rpv.get_ratep_id("q10_1");  rpv[rid].set_ratep(rpinit[0][1]);
+                rid = rpv.get_ratep_id("q01_2");  rpv[rid].set_ratep(rpinit[1][0]);
+                rid = rpv.get_ratep_id("q10_2");  rpv[rid].set_ratep(rpinit[1][1]);
+                rid = rpv.get_ratep_id("q01_3");  rpv[rid].set_ratep(rpinit[2][0]);
+                rid = rpv.get_ratep_id("q10_3");  rpv[rid].set_ratep(rpinit[2][1]);
+                rid = rpv.get_ratep_id("q01_4");  rpv[rid].set_ratep(rpinit[3][0]);
+                rid = rpv.get_ratep_id("q10_4");  rpv[rid].set_ratep(rpinit[3][1]);
+            } else if (sim_ntaxa == 6) {
+                if (true) {
+                    rid = rpv.get_ratep_id("q01_1");  rpv[rid].set_ratep(rpinit[0][0]);
+                    rid = rpv.get_ratep_id("q10_1");  rpv[rid].set_ratep(rpinit[0][1]);
+                    rid = rpv.get_ratep_id("q01_2");  rpv[rid].set_ratep(rpinit[1][0]);
+                    rid = rpv.get_ratep_id("q10_2");  rpv[rid].set_ratep(rpinit[1][1]);
+                }
+            } else {
+                std::cerr << "sim_ntaxa case not handled" << std::endl;
+                abort();
+            }
+            branch_rate_manager.calculate_p_transition();
+
+            // simulated datasets
+            if (! do_true_profiles_only) {
+                for (int p = 0; p < prior_prob_state0.size(); ++p) {
+                    sim.run_sim_characters(trait_matrix, tree,
+                                           sim_internal_tree,
+                                           sim_ntaxa,
+                                           sim_ntraits,
+                                           prior_prob_state0[p],
+                                           forw_base, back_relmag,
+                                           sim_desc);
+                }
+            }
+            // exit(0);
+
+            // true profiles == sim_nchars = 0
+            for (int p = 0; p < prior_prob_state0.size(); ++p) {
+                for (int i = 0; i < sim_ntraits.size(); ++i) {
+                    const std::string& filename =
+                            Simulate::form_filename_sim_characters(
+                                          sim_internal_tree,
+                                          sim_ntaxa, sim_ntraits[i],
+                                          prior_prob_state0[p],
+                                          forw_base, back_relmag,
+                                          sim_desc);
+                    trait_matrix.read_file(filename);
+                    ML_multi_DownhillSimplex ML(trait_matrix, tree,
+                                                branch_rate_manager);
+                    ML.set_prior_prob_root_state(prior_prob_state0[p]);
+                    char buf[1000];
+                    sprintf(buf, "%s.profiles.true.txt", filename.c_str());
+                    std::ofstream os_profile(buf);
+                    ML.profile_likelihoods_print(os_profile,
+                                                 ML_multi::lrt_profile_interval);
+                    os_profile.close();
+                }
+            }
+        }  // end of for ( sim_type ) loop
+        exit(0);
+    }
+    //////////////////////////// end simulations
+    //////////////////////////// end simulations
+    //////////////////////////// end simulations
+
+
+    //////////////////////////// maximum likelihood estimates
+    //////////////////////////// maximum likelihood estimates
+    //////////////////////////// maximum likelihood estimates
+    if (do_estimates) {
+        char buf[1000];
+        const char* sim_desc;
+        int sim_type = (single_sim_type < 0) ? 0 : single_sim_type;
+        const int max_sim = (single_sim_type < 0) ? max_sim_type :
+                                                    single_sim_type + 1;
+
+        for (int p = 0; p < prior_prob_state0.size(); ++p) {
+            for (; sim_type < max_sim; ++sim_type) {
+                for (int i = 0; i < sim_ntraits.size(); ++i) {
+                    const std::string& filename =
+                            Simulate::form_filename_sim_characters(
+                                          sim_internal_tree,
+                                          sim_ntaxa,
+                                          sim_ntraits[i],
+                                          prior_prob_state0[p],
+                                          forw_base, back_relmag,
+                                          sim_description[sim_type].c_str());
+                    trait_matrix.read_file(filename);
+
+                    if (mle_method == mle_method_downhillsimplex) {
+                        //////////////////////////// downhill simplex
+                        //////////////////////////// downhill simplex
+                        //////////////////////////// downhill simplex
+
+                        ML_multi_DownhillSimplex ML(trait_matrix, tree,
+                                                    branch_rate_manager);
+                        if (do_estimate_with_correct_prior)
+                            ML.set_prior_prob_root_state(prior_prob_state0[p]);
+                        else
+                            ML.set_prior_prob_root_state(estimate_assumed_prior);
+
+                        ML.maximize(branch_rate_manager.get_ratepvector().size(),
+                                    0.00000000000001,
+                                    0.1,
+                                    0.0000001,
+                                    0.000001,
+                                    0.00001);
+                        sprintf(buf, "%s.profiles.txt", filename.c_str());
+                        std::ofstream os_profile(buf);
+                        ML.profile_likelihoods_print(os_profile,
+                                                     ML_multi::lrt_profile_interval);
+                        os_profile.close();
+
+                    } else if (mle_method == mle_method_quasinewton) {
+                        //////////////////////////// quasi newton
+                        //////////////////////////// quasi newton
+                        //////////////////////////// quasi newton
+
+                        ML_multi_QuasiNewton ML(trait_matrix, tree,
+                                                branch_rate_manager);
+                        if (do_estimate_with_correct_prior)
+                            ML.set_prior_prob_root_state(prior_prob_state0[p]);
+                        else
+                            ML.set_prior_prob_root_state(estimate_assumed_prior);
+
+                        ML.maximize(branch_rate_manager.get_ratepvector().size(),
+                                    0.00000000000001,
+                                    0.1,
+                                    0.0000001);
+                        sprintf(buf, "%s.profiles.txt", filename.c_str());
+                        std::ofstream os_profile(buf);
+                        ML.profile_likelihoods_print(os_profile,
+                                                     ML_multi::lrt_profile_interval);
+                        os_profile.close();
+
+                    }
+
+
+                }
+            }
+        }
+        // std::cout << taxon_matrix;
+        // std::cout << ratep_map;
+        // std::cout << tree;
+        exit(0);
+    }
+    //////////////////////////// end maximum likelihood estimates
+    //////////////////////////// end maximum likelihood estimates
+    //////////////////////////// end maximum likelihood estimates
+
+
+    {
+        ML_multi_DownhillSimplex ML(trait_matrix, tree, branch_rate_manager);
+        ML.maximize(branch_rate_manager.get_ratepvector().size(),
+                    0.00000000000001,
+                    0.99999999999999,
+                    0.0000001,
+                    0.000001,
+                    0.001);
+    }
+    //ML.surface_range_print("ratef1", "rateb1", 0.001, 0.1, 0.002);
+
+
+    /////////////////////
+    // ML.partials_print();
+    // ML.surface_range_print("rate6", "rate1", 0.01, 0.2, 0.01);
+
+    // ML.maximize(0.001, 0.2, 0.00000001);
+    // std::cout << "ML.maximize() stops at " << ML.get_single_parameter()
+    //           << std::endl;
+
+}
+
+
+

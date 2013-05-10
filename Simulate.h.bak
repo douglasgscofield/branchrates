@@ -1,0 +1,294 @@
+#include "TraitMatrix.h"
+#include "TaxonMatrix.h"
+#include "PhyloTree.h"
+#include "GSL.h"
+
+#include <cassert>
+#include <vector>
+#include <string>
+#include <iostream>
+
+
+class Simulate {
+    private:
+        class sim_characters_config {
+            public:
+                double                                  root_prob;
+                int                                     num_characters_states;
+                int                                     cur_node;
+                std::vector<TraitMatrix::trait_type>    nodestates;
+                std::vector<TraitMatrix::trait_type>    leafstates;
+        };
+
+        void                sim_characters_subtree(
+                                    sim_characters_config& c,
+                                    const PhyloTreeNode* node);
+    public:
+        void                sim_characters(
+                                    TraitMatrix& trait_matrix, 
+                                    const PhyloTree& tree, 
+                                    int num = 100000,
+                                    const double prior_probability_state0 = 0.5);
+};
+
+void Simulate::sim_characters(TraitMatrix& trait_matrix, 
+                              const PhyloTree& tree, 
+                              int num,
+                              const double prior_probability_state0)
+{
+    assert(trait_matrix.get_taxa() != NULL);
+    assert(tree.get_num_nodes() > 0);
+    assert(tree.get_num_leaves() <= (sizeof(int)*8) - 1);
+
+    int                     num_char_config = 0x1 << tree.get_num_leaves();
+    sim_characters_config   c;
+    
+    c.root_prob = prior_probability_state0;  // probability of state 0 in root
+    c.num_char_states = 2;
+
+    // set up trait_matrix with columns in ascending leaf_id order
+    TaxonMatrix::taxon_id_vector_type v_tid;
+    v_tid.assign(tree.get_num_leaves(), TaxonMatrix::notset);
+    for (int l = 0; l < tree.get_num_leaves(); ++l) {
+        TaxonMatrix::taxon_id_type tid = 
+                          trait_matrix.get_taxa()->taxon_id_for_leaf_id(l);
+        assert(tid != TaxonMatrix::notset);
+        v_tid[l] = tid;
+    }
+    trait_matrix.set_taxon_ids(v_tid);
+
+    trait_matrix.matrix.resize(0);  // clear it, if it's been used before
+    trait_matrix.matrix.resize(num_char_config);
+
+    for (int s = 0; s < num_char_config; ++s) {
+        trait_matrix.matrix[s].set_id(s);
+        trait_matrix.matrix[s].set_freq(0);
+        trait_matrix.matrix[s].vals.assign(tree.get_num_leaves(), -1);
+        for (int l = 0; l < tree.get_num_leaves(); ++l) {
+            int bitpos = tree.get_num_leaves() - l - 1;
+            trait_matrix.matrix[s].vals[l] = (s & (0x1 << bitpos)) >> bitpos;
+        }
+    }
+
+    c.nodestates.assign(tree.get_num_nodes(), -1);
+    c.leafstates.assign(tree.get_num_leaves(), -1);
+    
+    for (int i = 0; i < num; ++i) {
+        c.nodestates[tree.get_node_id()] = (ran3() < c.root_prob) ? 0 : 1;
+        sim_characters_subtree(c, &tree);
+        
+        // figure out which state to assign to
+        int states_index = 0;
+        for (int l = 0; l < tree.get_num_leaves(); ++l) {
+            // this assert() is only good if valid states are 0 or 1
+            assert(c.leafstates[l] == 0 || c.leafstates[l] == 1);
+            int bitpos = tree.get_num_leaves() - l - 1;
+            states_index |= (c.leafstates[l] << bitpos);
+        }
+        trait_matrix.matrix[states_index].increment_freq();
+    }
+}
+
+
+void Simulate::sim_characters_subtree(sim_characters_config& c, 
+                                      const PhyloTreeNode* node)
+{
+    int thisstate;
+    if (node->get_is_root() == false) {
+        // we're not the root, so compute a simulated state
+        // if (ran3() < c.probtrans[node->get_node_id()]
+        //                    [c.nodestates[node->get_ancestor()->get_node_id()]]
+        //                    [0]) {
+        if (ran3() < node->get_p_transition(
+                     c.nodestates[node->get_ancestor()->get_node_id()], 0)) {
+            thisstate = 0;
+        } else {
+            thisstate = 1;
+        }
+        c.nodestates[node->get_node_id()] = thisstate;
+    }
+    if (node->get_is_leaf() == true) {
+        c.leafstates[node->get_leaf_id()] = thisstate;
+        return;
+    }
+    for (int i = 0; i < node->descendants.size(); ++i) {
+        sim_characters_subtree(c, node->descendants[i]);
+    }
+}
+
+
+////////////////////////////
+//////////////////////////// The following modified from rng/ran3.c of the
+//////////////////////////// Gnu Scientific Library
+////////////////////////////
+
+/* rng/ran3.c
+ *
+ * Copyright (C) 1996, 1997, 1998, 1999, 2000 James Theiler, Brian Gough
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#include <config.h>
+#include <stdlib.h>
+#include <gsl/gsl_rng.h>
+
+/* This is an implementation of the algorithm used in Knuths's
+   subtractive generator, with the Numerical Recipe's ran3 paramters.
+   It is a subtractive lagged fibonnaci generator. */
+
+static inline unsigned long int ran3_get (void *vstate);
+static double ran3_get_double (void *vstate);
+static void ran3_set (void *state, unsigned long int s);
+
+#define M_BIG 1000000000
+#define M_SEED 161803398
+
+typedef struct
+  {
+    unsigned int x;
+    unsigned int y;
+    unsigned long int buffer[56];
+  }
+ran3_state_t;
+
+static inline unsigned long int
+ran3_get (void *vstate)
+{
+  ran3_state_t *state = (ran3_state_t *) vstate;
+  long int j;
+
+  state->x++;
+
+  if (state->x == 56)
+    state->x = 1;
+
+  state->y++;
+
+  if (state->y == 56)
+    state->y = 1;
+
+  j = state->buffer[state->x] - state->buffer[state->y];
+
+  if (j < 0)
+    j += M_BIG;
+
+  state->buffer[state->x] = j;
+
+  return j;
+}
+
+static double
+ran3_get_double (void *vstate)
+{
+  return ran3_get (vstate) / (double) M_BIG ;
+}
+
+static void
+ran3_set (void *vstate, unsigned long int s)
+{
+  ran3_state_t *state = (ran3_state_t *) vstate;
+  int i, i1;
+  long int j, k;
+
+  if (s == 0)
+    s = 1;      /* default seed is 1 */
+
+  j = (M_SEED - s) % M_BIG;
+
+  /* the zeroth element is never used, but we initialize it for
+     consistency between states */
+
+  state->buffer[0] = 0;
+
+  state->buffer[55] = j;
+
+  k = 1;
+  for (i = 1; i < 55; i++)
+    {
+      int n = (21 * i) % 55;
+      state->buffer[n] = k;
+      k = j - k;
+      if (k < 0)
+        k += M_BIG;
+      j = state->buffer[n];
+
+    }
+
+  for (i1 = 0; i1 < 4; i1++)
+    {
+      for (i = 1; i < 56; i++)
+        {
+          long int t = state->buffer[i] - state->buffer[1 + (i + 30) % 55];
+          if (t < 0)
+            t += M_BIG;
+          state->buffer[i] = t;
+        }
+    }
+
+  state->x = 0;
+  state->y = 31;
+
+  return;
+}
+
+double ran3() {
+    // #define MBIG 1000000000
+    // #define MSEED 161803398
+    // #define MZ 0
+    // #define FAC (1.0/MBIG)
+    const int MBIG = 1000000000;
+    const int MSEED = 161803398;
+    const int MZ = 0;
+    const double FAC = (1.0/MBIG);
+    static long idum = -(time( NULL ) % 10000000);
+	static long inext,inextp;
+	static long ma[56];
+	static long iff = 0;
+	long mj,mk;
+	long i,ii,k;
+
+	if (idum < 0 || iff == 0) {
+		iff=1;
+		mj=MSEED-(idum < 0 ? -idum : idum);
+		mj %= MBIG;
+		ma[55]=mj;
+		mk=1;
+		for (i=1;i<=54;i++) {
+			ii=(21*i) % 55;
+			ma[ii]=mk;
+			mk=mj-mk;
+			if (mk < MZ) mk += MBIG;
+			mj=ma[ii];
+		}
+		for (k=1;k<=4;k++) {
+			for (i=1;i<=55;i++) {
+				ma[i] -= ma[1+(i+30) % 55];
+				if (ma[i] < MZ) ma[i] += MBIG;
+			}
+		}
+		inext=0;
+		inextp=31;
+		idum=1;
+	}
+	if (++inext == 56) inext=1;
+	if (++inextp == 56) inextp=1;
+	mj=ma[inext]-ma[inextp];
+	if (mj < MZ) mj += MBIG;
+	ma[inext]=mj;
+	return mj*FAC;
+}
+
+
