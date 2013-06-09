@@ -4,8 +4,8 @@ CPP  = g++
 CC   = gcc
 
 CXXINCLUDEDIRS =
-CXXFLAGS = $(CXXINCLUDEDIRS) -Wall -g3 -fno-inline
-CXXLDFLAGS = -g3
+CXXFLAGS = $(CXXINCLUDEDIRS) -Wall -g3 -ggdb -fno-inline
+CXXLDFLAGS = -g3 -ggdb
 
 OBJ  = BranchRateManager.o \
 	   HistorySingleParameter.o \
