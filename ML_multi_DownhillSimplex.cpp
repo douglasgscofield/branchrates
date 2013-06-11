@@ -10,9 +10,9 @@ void ML_multi_DownhillSimplex::print_data_structures(const mat_ratep_type& p,
 {
     std::cout << "y:funk_vals[0.." << y.size()-1 << "] p:simplex[0.."
               << p.size()-1 << "][0.." << p[0].size()-1 << "]" << std::endl;
-    for (int i = 0; i < p.size(); ++i) {
+    for (size_t i = 0; i < p.size(); ++i) {
         std::cout << " v:funk_vals[" << i << "]=" << y[i] << " p:simplex=[";
-        for (int j = 0; j < p[i].size(); ++j) {
+        for (size_t j = 0; j < p[i].size(); ++j) {
             std::cout << p[i][j] << " ";
         }
         std::cout << "]" << std::endl;
@@ -45,7 +45,7 @@ void ML_multi_DownhillSimplex::start_amoeba(int& nfunk)
         std::cout << " nfunk=" << nfunk;
         std::cout << " minimum at simplex[0]=" << get_neg_log_likelihood();
         std::cout << std::endl << std::endl << "parm\tval" << std::endl;
-        for (int i = 0; i < branch_rate_manager.get_ratepvector().size(); ++i) {
+        for (size_t i = 0; i < branch_rate_manager.get_ratepvector().size(); ++i) {
             std::cout << branch_rate_manager.get_ratepvector()[i].get_name()
                       << "\t"
                       << branch_rate_manager.get_ratepvector()[i].get_ratep()
@@ -62,7 +62,7 @@ void ML_multi_DownhillSimplex::initialize_simplex(const v_ratep_type& p0,
                                                   const double s_len,
                                                   ptr_eval_func funk)
 {
-    const int n_parameters = p0.size();
+    const int n_parameters = (int)p0.size();
     const int num_ratep = branch_rate_manager.get_ratepvector().size();
     assert(n_parameters == num_ratep);
     simplex.resize(n_parameters + 1);
@@ -79,7 +79,7 @@ void ML_multi_DownhillSimplex::initialize_simplex(const v_ratep_type& p0,
     if (DEBUG_START_AMOEBA) {
         std::cout << "end of initialize_simplex(): " << std::endl;
         std::cout << "i\tratep[i].name\tratep[i].ratep\tp0[i]" << std::endl;
-        for (int i = 0; i < branch_rate_manager.get_ratepvector().size(); ++i) {
+        for (size_t i = 0; i < branch_rate_manager.get_ratepvector().size(); ++i) {
             std::cout << i
                       << "\t"
                       << branch_rate_manager.get_ratepvector()[i].get_name()
@@ -176,9 +176,10 @@ double ML_multi_DownhillSimplex::amotry(mat_ratep_type& p,
                                         const double fac
                                        )
 {
-    int j, n_adjusted;
+    size_t j;
+    int n_adjusted;
     double fac1, fac2, ytry;
-    int ndim = p[0].size();
+    size_t ndim = p[0].size();
     v_ratep_type ptry(ndim);
     fac1 = (1.0 - fac) / ndim;
     fac2 = fac1 - fac;
@@ -212,10 +213,10 @@ double ML_multi_DownhillSimplex::amotry(mat_ratep_type& p,
 void ML_multi_DownhillSimplex::get_psum(const mat_ratep_type& p,
                                         v_ratep_type& psum)
 {
-    int i, j;
+    size_t i, j;
     double sum;
-    const int mpts = p.size();
-    const int ndim = p[0].size();
+    const size_t mpts = p.size();
+    const size_t ndim = p[0].size();
     assert(ndim == psum.size());
     for (j = 0; j < ndim; ++j) {
         for (sum = 0.0, i = 0; i < mpts; ++i) {

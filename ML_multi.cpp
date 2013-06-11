@@ -37,8 +37,8 @@ void ML_multi::eval_neg_log_likelihood_gradient_at(const v_ratep_type& in,
     RatePVector& rpv = branch_rate_manager.get_ratepvector();
     rpv.assign(in);
     compute();
-    double neg_logL = get_neg_log_likelihood();
-    for (int i = 0; i < in.size(); ++i) {
+    //double neg_logL = get_neg_log_likelihood();
+    for (size_t i = 0; i < in.size(); ++i) {
         double old_parm = rpv[i].get_ratep();
         // An "old-style" numerical derivative
         // rpv[i].update_ratep(bounds[i].delta);
@@ -177,7 +177,7 @@ void ML_multi::lnsrch(const v_ratep_type& xold,
 void ML_multi::bounds_adjust(v_ratep_type& p, int& n_adjusted) const
 {
     n_adjusted = 0;
-    for (int i = 0; i < p.size(); ++i) {
+    for (size_t i = 0; i < p.size(); ++i) {
         if (p[i] < bounds[i].lowerbound) {
             if (DEBUG_BOUNDS) {
                 std::cerr << "bounds_adjust: p[" << i << "]=" << p[i]
@@ -202,7 +202,7 @@ void ML_multi::bounds_adjust(v_ratep_type& p, int& n_adjusted) const
 void ML_multi::bounds_trace(const v_ratep_type& p, const std::string& loc) const
 {
     int n_adjusted = 0;
-    for (int i = 0; i < p.size(); ++i) {
+    for (size_t i = 0; i < p.size(); ++i) {
         if (p[i] < bounds[i].lowerbound) {
             std::cerr << loc << ": p[" << i << "]=" << p[i]
                       << " is less than lowerbound[" << i << "]="
@@ -318,7 +318,7 @@ void ML_multi::partials_print(std::ostream& os,
 {
     os << "ratep.name" << "\t" << "val" << "\t" << "neg.log.L" << std::endl;
     RatePVector& rpv = branch_rate_manager.get_ratepvector();
-    for (int i = 0; i < rpv.size(); ++i) {
+    for (size_t i = 0; i < rpv.size(); ++i) {
         double old_parm = rpv[i].get_ratep();
         for (double d = lowerdelta; d < upperdelta; d+= stepsize) {
             double new_parm = old_parm + d;
@@ -357,7 +357,7 @@ const ML_multi::mat_ratep_type&
     
     static mat_ratep_type intervals(rpv.size());
 
-    for (int i = 0; i < rpv.size(); ++i) {
+    for (size_t i = 0; i < rpv.size(); ++i) {
         intervals[i].resize(2);  // [0] is lower, [1] is upper
 
         old_parm = rpv[i].get_ratep();
@@ -437,7 +437,7 @@ void ML_multi::profile_likelihoods_print(std::ostream& os,
                                          const double  diff_log_likelihood)
 {
     compute();
-    const double max_log_likelihood = get_log_likelihood();
+    //const double max_log_likelihood = get_log_likelihood();
     
     const double parm_interval_stepsize = 0.01;
     const mat_ratep_type intervals =
@@ -446,7 +446,7 @@ void ML_multi::profile_likelihoods_print(std::ostream& os,
     os << "ratep.name" << "\t" << "val" << "\t" << "log.L" << std::endl;
     os.precision(15);
     RatePVector& rpv = branch_rate_manager.get_ratepvector();
-    for (int i = 0; i < rpv.size(); ++i) {
+    for (size_t i = 0; i < rpv.size(); ++i) {
         if (DEBUG_PROFILE) {
         }
         double old_parm = rpv[i].get_ratep();

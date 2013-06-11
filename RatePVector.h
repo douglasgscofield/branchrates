@@ -60,7 +60,7 @@ class RatePVector {
         int                      add_if_new_ratep(std::string n = "",
                                                   std::string d = "",
                                                   double val = 0.0);
-        int                      size() const;
+        size_t                   size() const;
         void                     assign(double arg);
         void                     assign(const v_ratep_type& v);
         void                     update(const v_ratep_type& v);
@@ -155,7 +155,7 @@ inline bool RatePVector::get_initialized() {
 }
 
 inline int RatePVector::get_ratep_id(const std::string& n) const {
-    for (int i = 0; i < ratepvec.size(); ++i) {
+    for (size_t i = 0; i < ratepvec.size(); ++i) {
         if (n == ratepvec[i].get_name()) {
             return(ratepvec[i].get_ratep_id());
         }
@@ -178,7 +178,7 @@ inline int RatePVector::add_new_ratep(std::string n, std::string d, double val) 
                   << ":" << std::endl;
     }
     assert(get_ratep_id(n) < 0);  // not a duplicate entry
-    int end = ratepvec.size();
+    int end = (int)ratepvec.size();
     ratepvec.resize(end + 1);
     ratepvec[end].set_ratep_id(end);
     ratepvec[end].set_name(n);
@@ -188,12 +188,12 @@ inline int RatePVector::add_new_ratep(std::string n, std::string d, double val) 
     return(end);
 }
 
-inline int RatePVector::size() const {
+inline size_t RatePVector::size() const {
     return(ratepvec.size());
 }
 
 inline void RatePVector::assign(double arg) {
-    for (int i = 0; i < ratepvec.size(); ++i) {
+    for (size_t i = 0; i < ratepvec.size(); ++i) {
         ratepvec[i].set_ratep(arg);
     }
 }
@@ -201,7 +201,7 @@ inline void RatePVector::assign(double arg) {
 inline const RatePVector::v_ratep_type& RatePVector::get_v_ratep() const {
     static v_ratep_type v;
     v.resize(size());
-    for (int i = 0; i < size(); ++i) {
+    for (size_t i = 0; i < size(); ++i) {
         v[i] = ratepvec[i].get_ratep();
     }
     return(v);
@@ -209,14 +209,14 @@ inline const RatePVector::v_ratep_type& RatePVector::get_v_ratep() const {
 
 inline void RatePVector::assign(const v_ratep_type& v) {
     assert(v.size() == size());
-    for (int i = 0; i < size(); ++i) {
+    for (size_t i = 0; i < size(); ++i) {
         ratepvec[i].set_ratep(v[i]);
     }
 }
 
 inline void RatePVector::update(const v_ratep_type& v) {
     assert(v.size() == size());
-    for (int i = 0; i < size(); ++i) {
+    for (size_t i = 0; i < size(); ++i) {
         ratepvec[i].update_ratep(v[i]);
     }
 }
@@ -228,7 +228,7 @@ inline RatePVector::RatePVector() : name_prefix("rate_"), prev_in_use(false),
 }
 
 inline void RatePVector::store() {
-    for (int i = 0; i < size(); ++i) {
+    for (size_t i = 0; i < size(); ++i) {
         ratepvec[i].set_prev_ratep(ratepvec[i].get_ratep());
     }
     prev_in_use = true;
@@ -236,7 +236,7 @@ inline void RatePVector::store() {
 
 inline void RatePVector::restore() {
     assert(prev_in_use == true);
-    for (int i = 0; i < ratepvec.size(); ++i) {
+    for (size_t i = 0; i < ratepvec.size(); ++i) {
         ratepvec[i].set_ratep(ratepvec[i].get_prev_ratep());
     }
     prev_in_use = false;

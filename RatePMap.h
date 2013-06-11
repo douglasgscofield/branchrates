@@ -13,6 +13,7 @@
 
 class RatePMap {
     private:
+
         class MapEntry {
             public:
                 std::string             branchname;
@@ -72,8 +73,7 @@ inline RatePMap::RatePMap(const std::string& filename) {
 }
 
 inline RatePMap::MapEntry::MapEntry(const std::string& b, const std::string& r)
-    : branchname(b), ratename(r), is_forward(false), is_backward(false),
-      ratep_id(-1)
+    : branchname(b), is_forward(false), is_backward(false), ratename(r), ratep_id(-1)
 {
     /* EMPTY */
 }

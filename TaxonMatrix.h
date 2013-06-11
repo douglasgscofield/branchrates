@@ -131,10 +131,10 @@ inline TaxonMatrix::taxon_id_type TaxonMatrix::taxon_id_for_leaf_id(int lid) con
 {
     assert(lid >= 0);
     int i;
-    for (i = 0; i < taxa.size(); ++i)
+    for (i = 0; i < (int)taxa.size(); ++i)
         if (taxa[i].get_leaf_id() == lid)
             break;
-    if (i >= taxa.size())
+    if (i >= (int)taxa.size())
         return(notset);
     else
         return(i);
@@ -146,17 +146,18 @@ inline void TaxonMatrix::read_internal_data()
     for (int i = 0; init_matrix[i].id >= 0; ++i) {
         // we don't use the id field, and probably never will
         // we also don't need to know the id that resulted from the add_taxon()
-        TaxonMatrix::taxon_id_type id = add_taxon(init_matrix[i].name,
-                                                  init_matrix[i].description);
+
+        //TaxonMatrix::taxon_id_type id = add_taxon(init_matrix[i].name,
+        //                                          init_matrix[i].description);
     }
 }
 
 inline TaxonMatrix::taxon_id_type TaxonMatrix::add_taxon(const std::string& n,
                                                          const std::string& d) {
-    for (int i = 0; i < taxa.size(); ++i) {
+    for (size_t i = 0; i < taxa.size(); ++i) {
         assert(taxa[i].get_name() != n);
     }
-    int end = taxa.size();
+    int end = (int)taxa.size();
     taxa.resize(end + 1);
     taxa[end].set_id(end);
     taxa[end].set_name(n);
@@ -168,7 +169,7 @@ inline TaxonMatrix::taxon_id_type TaxonMatrix::add_taxon(const std::string& n,
 inline TaxonMatrix::taxon_id_type TaxonMatrix::get_taxon_id(
                                                    const std::string& n) const
 {
-    for (int i = 0; i < taxa.size(); ++i) {
+    for (size_t i = 0; i < taxa.size(); ++i) {
         if(taxa[i].get_name() == n) {
             return(taxa[i].get_id());
         }

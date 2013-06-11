@@ -46,7 +46,7 @@ std::ostream& operator<<(std::ostream& os, const TaxonMatrix& tm)
 
 void TaxonMatrix::print(std::ostream& os) const
 {
-    for (int i = 0; i < taxa.size(); ++i) {
+    for (size_t i = 0; i < taxa.size(); ++i) {
         taxa[i].print(os);
     }
     os << std::endl;

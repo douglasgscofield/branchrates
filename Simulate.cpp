@@ -34,7 +34,7 @@ void Simulate::run_sim_characters(TraitMatrix& trait_matrix,
                                   const double back_relmag,
                                   const char sim_description[])
 {
-    for (int i = 0; i < sim_nchars.size(); ++i) {
+    for (size_t i = 0; i < sim_nchars.size(); ++i) {
         std::cout << "sim " << sim_nchars[i]
                   << " chars on internal tree " << sim_internal_tree;
         std::cout << " for " << sim_ntaxa << " taxa,";
@@ -59,7 +59,7 @@ void Simulate::sim_characters(TraitMatrix& trait_matrix,
 {
     assert(trait_matrix.get_taxa() != NULL);
     assert(tree.get_num_nodes() > 0);
-    assert(tree.get_num_leaves() <= (sizeof(int)*8) - 1);
+    assert(tree.get_num_leaves() <= (int)((sizeof(int)*8) - 1));
 
     int                     num_char_config = 0x1 << tree.get_num_leaves();
     sim_characters_config   c;
@@ -133,7 +133,7 @@ void Simulate::sim_characters_subtree(sim_characters_config& c,
         c.leafstates[node->get_leaf_id()] = thisstate;
         return;
     }
-    for (int i = 0; i < node->descendants.size(); ++i) {
+    for (size_t i = 0; i < node->descendants.size(); ++i) {
         sim_characters_subtree(c, node->descendants[i]);
     }
 }

@@ -14,7 +14,7 @@ void PhyloTreeNode::find_taxa_for_leaves(TaxonMatrix& tm) {
         tm.taxa[tid].set_leaf_id(get_leaf_id());
         set_taxon_id(tid);
     } else {
-        for (int i = 0; i < descendants.size(); ++i) {
+        for (size_t i = 0; i < descendants.size(); ++i) {
             descendants[i]->find_taxa_for_leaves(tm);
         }
     }
@@ -44,7 +44,7 @@ void PhyloTreeNode::read_internal_tree(const s_init_tree* table, int n) {
 
 int PhyloTreeNode::count_nodes() const {
     int n = 1;  // one for me
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         // and ones for my homies
         n += descendants[i]->count_nodes();
     }
@@ -53,7 +53,7 @@ int PhyloTreeNode::count_nodes() const {
 
 int PhyloTreeNode::count_leaves() const {
     int n = (get_is_leaf() == true) ? 1 : 0;
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         n += descendants[i]->count_leaves();
     }
     return(n);
@@ -61,7 +61,7 @@ int PhyloTreeNode::count_leaves() const {
 
 int PhyloTreeNode::count_internal_nodes() const {
     int n = (get_is_leaf() == false) ? 1 : 0;
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         n += descendants[i]->count_internal_nodes();
     }
     return(n);
@@ -69,7 +69,7 @@ int PhyloTreeNode::count_internal_nodes() const {
 
 int PhyloTreeNode::count_branches() const {
     int n = 0;
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         ++n;
         n += descendants[i]->count_branches();
     }
@@ -87,7 +87,7 @@ void PhyloTreeNode::allocate_branchrate_ids() {
         //ptr_p_trans = branchratemanager->get_addr_p_trans(brid);
         ptr_p_trans = NULL;
     }
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         descendants[i]->set_branchratemanager(*branchratemanager);
         descendants[i]->allocate_branchrate_ids();
     }
@@ -138,7 +138,7 @@ void PhyloTreeNode::brief_print(std::ostream& os, const int indent) const{
            << get_p_transition(1, 1) << "]";
     }
     os << std::endl;
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         descendants[i]->brief_print(os, indent + 1);
     }
     os << std::endl;
@@ -176,7 +176,7 @@ void PhyloTreeNode::full_print(std::ostream& os, const int indent) const {
         branchratemanager->print(branchrate_id, os);
     os << ">" << std::endl;
     
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         descendants[i]->full_print(os, indent + 1);
     }
 }
@@ -190,7 +190,7 @@ void PhyloTreeNode::newick_print(std::ostream& os) const {
     static const int annotate_comment = 0;
     // need to check against Newick grammar
     if (!get_is_leaf()) os << "(";
-    for (int i = 0; i < descendants.size(); ++i) {
+    for (size_t i = 0; i < descendants.size(); ++i) {
         descendants[i]->newick_print(os);
     }
     if (!get_is_leaf()) {
@@ -216,7 +216,7 @@ const std::string& PhyloTreeNode::form_newick_label(const std::string& name) {
     static std::string ans;
     ans = "";
     bool quote_needed = false, blank_seen = false;
-    for (int i = 0; i < name.length(); ++i) {
+    for (size_t i = 0; i < name.length(); ++i) {
         switch(name[i]) {
             case ' ':
                 blank_seen = true;
@@ -232,13 +232,13 @@ const std::string& PhyloTreeNode::form_newick_label(const std::string& name) {
         if (!blank_seen)
             return(name);
         else {
-            for (int i = 0; i < name.length(); ++i)
+            for (size_t i = 0; i < name.length(); ++i)
                 ans += (name[i] == ' ') ? '_' : name[i];
             return(ans);
         }
     }
     ans = '\'';
-    for (int i = 0; i < name.length(); ans += name[i++]) {
+    for (size_t i = 0; i < name.length(); ans += name[i++]) {
         if (name[i] == '\'')
             ans += '\'';
     }

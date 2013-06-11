@@ -15,7 +15,7 @@
 
 extern void sim_chars(TraitMatrix& trait_matrix, const PhyloTree& tree, int num);
 
-main() {
+int main() {
     TaxonMatrix         taxon_matrix;
     PhyloTree           tree;
     BranchRateManager   branch_rate_manager;

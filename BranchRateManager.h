@@ -210,9 +210,9 @@ inline void BranchRateManager::BranchRate::set_backward_id(int id)
 inline BranchRateManager::BranchRate::BranchRate() : this_branchrate_id(notset),
     name(""), forward_id(notset), backward_id(notset), ratep_allocated(false) {
     p_trans.resize(TraitMatrix::max_num_states);
-    for (int i = 0; i < p_trans.size(); ++i) {
+    for (size_t i = 0; i < p_trans.size(); ++i) {
         p_trans[i].resize(TraitMatrix::max_num_states);
-        for (int j = 0; j < p_trans[i].size(); ++j) {
+        for (size_t j = 0; j < p_trans[i].size(); ++j) {
             p_trans[i][j] = 100.0 + double(i)*10.0 + double(j);
         }
     }

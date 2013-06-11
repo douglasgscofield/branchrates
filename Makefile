@@ -4,9 +4,7 @@ CPP  = g++
 CC   = gcc
 
 CXXINCLUDEDIRS =
-CXXFLAGS = $(CXXINCLUDEDIRS) -Wall -g3 -ggdb -fno-inline
-CXXLDFLAGS = -g3 -ggdb
-
+CXXFLAGS = $(CXXINCLUDEDIRS) -D_FILE_OFFSET_BITS=64 -Wall -ggdb -g3 -fno-inline-small-functions -O0 -fno-inline -fno-eliminate-unused-debug-types
 OBJ  = BranchRateManager.o \
 	   HistorySingleParameter.o \
 	   Likelihood.o \
@@ -51,7 +49,7 @@ BIN  = branchrates
 all: $(BIN)
 
 $(BIN): $(OBJ)
-	$(CPP) $(CXXLDFLAGS) $(OBJ) -o $@ $(LIBS)
+	$(CPP) $(CXXFLAGS) $(OBJ) -o $@ $(LIBS)
 
 $(OBJ): $(HEADER)
 

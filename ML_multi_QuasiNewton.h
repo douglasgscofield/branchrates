@@ -85,7 +85,7 @@ inline void ML_multi_QuasiNewton::start_dfpmin()
         std::cout << " minimum=" << fret;
         std::cout << std::endl;
         std::cout << "parm\tval" << std::endl;
-        for (int i = 0; i < branch_rate_manager.get_ratepvector().size(); ++i) {
+        for (size_t i = 0; i < branch_rate_manager.get_ratepvector().size(); ++i) {
             std::cout << branch_rate_manager.get_ratepvector()[i].get_name()
                       << "\t"
                       << branch_rate_manager.get_ratepvector()[i].get_ratep()

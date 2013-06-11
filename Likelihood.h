@@ -144,7 +144,7 @@ inline void Likelihood::set_prior_prob_root_state(const double prior) {
     prior_prob_root_state.resize(TraitMatrix::max_num_states);
     prior_prob_root_state[0] = prior;
     double step = (1.0 - prior) / double(prior_prob_root_state.size() - 1);
-    for (int i = 1; i < prior_prob_root_state.size(); ++i) {
+    for (size_t i = 1; i < prior_prob_root_state.size(); ++i) {
         prior_prob_root_state[i] = step;
     }
 }

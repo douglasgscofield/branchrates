@@ -97,9 +97,9 @@ class TraitMatrix {
 
 //  TraitMatrix traits;
 //  // ...code that fills traits...
-//  for (int i = 0; i < traits.matrix.size(); ++i) {
+//  for (size_t i = 0; i < traits.matrix.size(); ++i) {
 //      TraitMatrix::trait_vector_type tv = traits.matrix.get_vals();
-//      for (int tt = 0; tt < tv.size(); ++tt) {
+//      for (size_t tt = 0; tt < tv.size(); ++tt) {
 //          // ... do something with tv[tt] ...
 //      }
 //      // or, do get the trait value for a particular taxa:

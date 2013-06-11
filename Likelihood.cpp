@@ -50,7 +50,7 @@ double Likelihood::L_trait_node_state(int trait, const PhyloTreeNode* node,
     // Internal node
 
     thistrait_node_state_L = 1.0;
-    for (int d = 0; d < node->descendants.size(); ++d) {
+    for (size_t d = 0; d < node->descendants.size(); ++d) {
         double partial_sum = 0.0;
         for (int s = 0; s < TraitMatrix::max_num_states; ++s) {
             double p_trans = node->descendants[d]->get_p_transition(state, s);
@@ -138,7 +138,7 @@ void Likelihood::compute() {
 
     branch_rate_manager.calculate_p_transition();
 
-    for (int trait = 0; trait < trait_matrix.matrix.size(); ++trait) {
+    for (size_t trait = 0; trait < trait_matrix.matrix.size(); ++trait) {
 
         if (trait_matrix.matrix[trait].get_freq() > 0) {
 
@@ -178,7 +178,7 @@ void Likelihood::print(std::ostream& os) const {
     os << " branch_rate_manager=" << ((void*)&branch_rate_manager);
     os << " prior_prob_root_state[0.." << (prior_prob_root_state.size()-1)
        << "]={";
-    for (int i = 0; i < prior_prob_root_state.size(); ++i) {
+    for (size_t i = 0; i < prior_prob_root_state.size(); ++i) {
         os << " " << prior_prob_root_state[i];
     }
     os << "}";
@@ -195,6 +195,7 @@ std::ostream& operator<<(std::ostream& os, const Likelihood& lhood) {
     os << "Likelihood:";
     lhood.print(os);
     os << std::endl;
+    return(os);
 }
 
 

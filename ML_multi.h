@@ -169,7 +169,7 @@ inline void ML_multi::maximize(const v_ratep_type& lb,
 {
     assert(lb.size() == ub.size());
     int num_ratep = branch_rate_manager.get_ratepvector().size();
-    assert(num_ratep == lb.size());
+    assert(num_ratep == (int)lb.size());
     assert(num_ratep > 1);
     double delta = determine_machine_delta();
     bounds.resize(num_ratep);

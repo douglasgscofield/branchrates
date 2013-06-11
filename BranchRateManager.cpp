@@ -2,7 +2,7 @@
 
 
 void BranchRateManager::set_unidir_rate(double r) {
-    for (int i = 0; i < branchrates.size(); ++i) {
+    for (int i = 0; i < (int)branchrates.size(); ++i) {
         set_unidir_rate(i, r);
     }
 }
@@ -15,7 +15,7 @@ void BranchRateManager::set_unidir_rate(int brid, double r) {
 
 
 void BranchRateManager::set_bidir_rates(double r_forw, double r_back) {
-    for (int i = 0; i < branchrates.size(); ++i) {
+    for (int i = 0; i < (int)branchrates.size(); ++i) {
         set_bidir_rates(i, r_forw, r_back);
     }
 }
@@ -37,7 +37,7 @@ void BranchRateManager::set_bidir_rates(int brid, double r_forw,
 
 
 void BranchRateManager::calculate_p_transition() {
-    for (int i = 0; i < branchrates.size(); ++i) {
+    for (int i = 0; i < (int)branchrates.size(); ++i) {
         if (get_ratep_allocated(i) != true) {
             std::cerr << "not allocated: ratep for i=" << i << std::endl;
             print(std::cerr);
@@ -75,16 +75,16 @@ void BranchRateManager::allocate_ratep_from_map(RatePMap& map)
     for (int i = 0; i < map.size(); ++i) {
         //std::cerr << "map name " << i << " " << map.get_branchname(i) << std::endl;
         int brid;  // this will hold the branch referenced in map[i]
-        for (brid = 0; brid < branchrates.size(); ++brid) {
+        for (brid = 0; brid < (int)branchrates.size(); ++brid) {
             //std::cerr << "branch name " << brid << " " << branchrates[brid].get_name() << std::endl;
             if (branchrates[brid].get_name() == map.get_branchname(i)) {
                 break;
             }
         }
-        if (brid >= branchrates.size()) {
+        if (brid >= (int)branchrates.size()) {
             std::cerr << "allocate_ratep_from_map: branch not found" << std::endl;
         }
-        assert(brid < branchrates.size());
+        assert(brid < (int)branchrates.size());
 
         // allocate the named rate parameter, or find it if already allocated
         int rid = ratepv.add_if_new_ratep(map.get_ratename(i));
@@ -99,7 +99,7 @@ void BranchRateManager::allocate_ratep_from_map(RatePMap& map)
         }
     }
     // go through all branchrates, make sure that forward and backward assigned
-    for (int i = 0; i < branchrates.size(); ++i) {
+    for (size_t i = 0; i < branchrates.size(); ++i) {
         if (branchrates[i].get_forward_id() >= 0 &&
             branchrates[i].get_backward_id() >= 0) {
 
@@ -185,7 +185,7 @@ void BranchRateManager::print(std::ostream& os) const {
     os << " name_forward=:" << name_forward << ":";
     os << " name_backward=:" << name_backward << ":";
     os << std::endl;
-    for (int i = 0; i < branchrates.size(); ++i) {
+    for (size_t i = 0; i < branchrates.size(); ++i) {
         print(branchrates[i].get_this_branchrate_id(), os);
         os << std::endl;
     }
@@ -220,6 +220,7 @@ std::ostream& operator<<(std::ostream& os, const BranchRateManager& brm)
     os << "BranchRateManager: ";
     brm.print(os);
     os << std::endl;
+    return(os);
 }
 
 

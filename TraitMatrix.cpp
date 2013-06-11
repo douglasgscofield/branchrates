@@ -7,10 +7,10 @@ const TraitMatrix::trait_type   TraitMatrix::valid_states[] = {0, 1};
 const TraitMatrix::trait_matrix_type& TraitMatrix::get_trait_matrix() const
 {
     static trait_matrix_type traitmat(matrix.size());
-    for (int i = 0; i < matrix.size(); ++i) {
+    for (size_t i = 0; i < matrix.size(); ++i) {
         const trait_vector_type& vals = matrix[i].get_vals();
         traitmat[i].resize(vals.size());
-        for (int j = 0; j < vals.size(); ++j) {
+        for (size_t j = 0; j < vals.size(); ++j) {
             traitmat[i][j] = vals[j];
         }
     }
@@ -23,7 +23,7 @@ void TraitMatrix::realign_trait_matrix_to_leaf_ids() {
     assert(taxa->taxa.size() > 0);
     const TaxonMatrix::taxon_id_vector_type& oldtid = get_taxon_ids();
     TaxonMatrix::taxon_id_vector_type newtid(oldtid.size(), TaxonMatrix::notset);
-    for (int i = 0; i < newtid.size(); ++i) {
+    for (size_t i = 0; i < newtid.size(); ++i) {
         newtid[i] = taxa->taxon_id_for_leaf_id(i);
         assert(newtid[i] != TaxonMatrix::notset);
     }
@@ -38,8 +38,8 @@ void TraitMatrix::realign_trait_matrix(
     assert(newtid.size() == oldtid.size());
     const int notset = -1;
     std::vector<int> newpos(oldtid.size(), notset);
-    for (int opos = 0; opos < newpos.size(); ++opos) {
-        for (int npos = 0; npos < newpos.size(); ++npos) {
+    for (size_t opos = 0; opos < newpos.size(); ++opos) {
+        for (size_t npos = 0; npos < newpos.size(); ++npos) {
             if (oldtid[opos] == newtid[npos]) {
                 newpos[opos] = npos;
                 break;
@@ -55,7 +55,7 @@ void TraitMatrix::realign_trait_matrix(
     trait_matrix_type mat(get_trait_matrix());
     transpose_trait_matrix(mat);
     trait_matrix_type newmat(mat.size());
-    for (int i = 0; i < newpos.size(); ++i) {
+    for (size_t i = 0; i < newpos.size(); ++i) {
         newmat[newpos[i]] = mat[i];
     }
     transpose_trait_matrix(newmat);
@@ -68,8 +68,8 @@ void TraitMatrix::set_trait_matrix(const TraitMatrix::trait_matrix_type& traitma
 {
     assert(NULL != taxa);
 
-    int num_entries = traitmat.size();
-    int num_taxa = traitmat[0].size();
+    size_t num_entries = traitmat.size();
+    size_t num_taxa = traitmat[0].size();
     if (taxa->taxa.size() != num_taxa) {
         std::cerr << "set_trait_matrix: no match: taxa->taxa.size()="
                   << taxa->taxa.size() << " and num_taxa=" << num_taxa
@@ -79,7 +79,7 @@ void TraitMatrix::set_trait_matrix(const TraitMatrix::trait_matrix_type& traitma
     assert(taxa->taxa.size() == num_taxa);
 
     matrix.resize(num_entries);
-    for (int i = 0; i < num_entries; ++i) {
+    for (size_t i = 0; i < num_entries; ++i) {
         assert(traitmat[i].size() == num_taxa);
         matrix[i].set_id(i);
         matrix[i].vals.resize(num_taxa);
@@ -90,12 +90,12 @@ void TraitMatrix::set_trait_matrix(const TraitMatrix::trait_matrix_type& traitma
 
 void TraitMatrix::transpose_trait_matrix(trait_matrix_type& traitmat)
 {
-    const int nrow = traitmat.size();
-    const int ncol = traitmat[0].size();
+    const size_t nrow = traitmat.size();
+    const size_t ncol = traitmat[0].size();
     trait_matrix_type newmat(ncol);
-    for (int i = 0; i < ncol; ++i) {
+    for (size_t i = 0; i < ncol; ++i) {
         newmat[i].resize(nrow);
-        for (int j = 0; j < nrow; ++j) {
+        for (size_t j = 0; j < nrow; ++j) {
             newmat[i][j] = traitmat[j][i];
         }
     }
@@ -112,19 +112,19 @@ void TraitMatrix::write_file(const std::string& filename) const {
         assert(false);
     }
     
-    const int num_taxa = taxon_ids.size();
+    const size_t num_taxa = taxon_ids.size();
     // line 1
     file << "traitsummary" << std::endl;
     // line 2
-    for (int i = 0; i < num_taxa; ++i) {
+    for (size_t i = 0; i < num_taxa; ++i) {
         file << taxa->taxa[taxon_ids[i]].get_name();
         file << "\t";
     }
     file << "Count" << std::endl;
     // data lines
-    for (int i = 0; i < matrix.size(); ++i) {
+    for (size_t i = 0; i < matrix.size(); ++i) {
         const trait_vector_type& v = matrix[i].get_vals();
-        for (int j = 0; j < num_taxa; ++j) {
+        for (size_t j = 0; j < num_taxa; ++j) {
             file << v[j] << "\t";
         }
         file << matrix[i].get_freq() << std::endl;
@@ -185,7 +185,7 @@ void TraitMatrix::read_file(const std::string& filename)
             for (int i = 0; i < numtaxa; ++i) {
                 names.push_back(field[i]);
             }
-            assert(names.size() == numtaxa);
+            assert((int)names.size() == numtaxa);
             assert(field[numtaxa] == "Count" || 
                    field[numtaxa] == "Freqs" ||
                    field[numtaxa] == "Frequency");
@@ -213,13 +213,13 @@ void TraitMatrix::read_file(const std::string& filename)
         incident_count[1] += local_incident_count[1]*freqfield;
     }
     if (DEBUG_READ_FILE) {
-        for (int i = 0; i < names.size(); ++i) {
+        for (size_t i = 0; i < names.size(); ++i) {
             std::cout << names[i] << ",";
         }
         std::cout << std::endl;
-        for (int i = 0; i < traitmat.size(); ++i) {
+        for (size_t i = 0; i < traitmat.size(); ++i) {
             std::cout << "traitmat[" << i << "]=";
-            for (int j = 0; j < traitmat[i].size(); ++j) {
+            for (size_t j = 0; j < traitmat[i].size(); ++j) {
                 std::cout << traitmat[i][j] << ",";
             }
             std::cout << " freq=" << freqs[i];
@@ -242,12 +242,12 @@ void TraitMatrix::fill(const TraitMatrix::trait_matrix_type& traitmat,
 {
     assert(NULL != taxa);
 
-    int num_entries = traitmat.size();
+    size_t num_entries = traitmat.size();
     assert(freqs.size() == num_entries);
     matrix.resize(0);  // to clear it, if it's not already
     matrix.resize(num_entries);
     
-    for (int i = 0; i < num_entries; ++i) {
+    for (size_t i = 0; i < num_entries; ++i) {
         matrix[i].set_freq(freqs[i]);
     }
 
@@ -265,10 +265,10 @@ void TraitMatrix::fill(const TraitMatrix::trait_matrix_type& traitmat,
     assert(NULL != taxa);
     // assert(0 == taxa->taxa.size()); // may be able to soften this
 
-    int num_taxa = traitmat[0].size();
+    size_t num_taxa = traitmat[0].size();
     assert(names.size() == num_taxa);
 
-    for (int i = 0; i < num_taxa; ++i) {
+    for (size_t i = 0; i < num_taxa; ++i) {
         TaxonMatrix::taxon_id_type tid = taxa->get_taxon_id(names[i]);
         if (tid < 0) {
             tid = taxa->add_taxon(names[i]);
@@ -283,7 +283,7 @@ void TraitMatrix::fill(const TraitMatrix::trait_matrix_type& traitmat,
 void TraitMatrix::set_taxa(TaxonMatrix& tm)
 {
     taxa = &tm;
-    for (int i = 0; i < taxa->taxa.size(); ++i) {
+    for (size_t i = 0; i < taxa->taxa.size(); ++i) {
         if (taxa->taxa[i].get_leaf_id() == TaxonMatrix::notset) {
             std::cerr << "TraitMatrix::set_taxa(): taxa must have leaf_ids"
                       << " set, prior to this call, by calling "
@@ -293,7 +293,7 @@ void TraitMatrix::set_taxa(TaxonMatrix& tm)
     }
     TaxonMatrix::taxon_id_vector_type v_tid;
     v_tid.assign(taxa->taxa.size(), TaxonMatrix::notset);
-    for (int l = 0; l < v_tid.size(); ++l) {
+    for (size_t l = 0; l < v_tid.size(); ++l) {
         // loop through the columns from 0 -> taxon_ids.size()-1, looking
         // for a leaf_id that matches each one
         TaxonMatrix::taxon_id_type tid = taxa->taxon_id_for_leaf_id(l);
@@ -316,9 +316,9 @@ void TraitMatrix::set_taxa(TaxonMatrix& tm)
 
 int TraitMatrix::map_taxon_id_to_col(int tid) const {
     assert(taxon_ids.size() > 0);
-    for (int i = 0; i < taxon_ids.size(); ++i) {
+    for (size_t i = 0; i < taxon_ids.size(); ++i) {
         if (taxon_ids[i] == tid) {
-            return(i);
+            return((int)i);
         }
     }
     return(-1);  // out of bounds
@@ -329,12 +329,12 @@ void TraitMatrix::print(std::ostream& os) const {
     os << "max_num_states=" << max_num_states;
     os << " taxa=" << ((void*)taxa);
     os << " taxon_ids[0.." << (taxon_ids.size()-1) << "]={";
-    for (int i = 0; i < taxon_ids.size(); ++i) {
+    for (size_t i = 0; i < taxon_ids.size(); ++i) {
         os << " " << taxon_ids[i];
     }
     os << "}";
     os << " leaf_ids[0.." << (taxon_ids.size()-1) << "]={";
-    for (int i = 0; i < taxon_ids.size(); ++i) {
+    for (size_t i = 0; i < taxon_ids.size(); ++i) {
         os << " " << taxa->taxa[taxon_ids[i]].get_leaf_id();
     }
     os << "}";
@@ -344,7 +344,7 @@ void TraitMatrix::print(std::ostream& os) const {
     }
     os << "}";
     os << std::endl;
-    for (int i = 0; i < matrix.size(); ++i) {
+    for (size_t i = 0; i < matrix.size(); ++i) {
         os << "[" << i << "]";
         matrix[i].print(os);
     }
@@ -361,7 +361,7 @@ std::ostream& operator<<(std::ostream& os, const TraitMatrix& tm) {
 
 void TraitMatrix::TraitMatrixEntry::print(std::ostream& os) const {
     os << "    id=" << id;
-    for (int i = 0; i < vals.size(); ++i) {
+    for (size_t i = 0; i < vals.size(); ++i) {
         os << "   " << vals[i];
     }
     os << " freq=" << freq;

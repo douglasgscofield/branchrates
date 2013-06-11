@@ -2,7 +2,7 @@
 
 RatePMap::~RatePMap()
 {
-    for (int i = 0; i < map.size(); ++i) {
+    for (size_t i = 0; i < map.size(); ++i) {
         delete map[i];
     }
 }
@@ -64,7 +64,7 @@ void RatePMap::print(std::ostream& os) const
     //os << "  tree_node_decorated=" << (tree_node_decorated ? "true" : "false");
     //os << "  ratep_allocated=" << (ratep_allocated ? "true" : "false");
     //os << std::endl;
-    for (int i = 0; i < map.size(); ++i) {
+    for (size_t i = 0; i < map.size(); ++i) {
         os << "  branch=" << map[i]->branchname;
         if (map[i]->is_forward)
             os << " forward";
@@ -82,8 +82,8 @@ void RatePMap::print(std::ostream& os) const
 void RatePMap::is_ok() const
 {
     // check for duplicate entries for a branch rate
-    for (int i = 0; i < map.size()-1; ++i) {
-        for (int j = i+1; j < map.size(); ++j) {
+    for (size_t i = 0; i < map.size()-1; ++i) {
+        for (size_t j = i+1; j < map.size(); ++j) {
             if (map[i]->branchname == map[j]->branchname) {
                 std::cerr << "duplicate RatePMap entries for " << map[i]->branchname
                      << std::endl;
